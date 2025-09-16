@@ -4,7 +4,7 @@ This is a simple, configurable linter for Go source code. It's designed to be a 
 
 ### Features
 - Configurable: Easily enable, disable, and tune rules via a simple config.yaml file.
-- Constantly adding more checksand features.
+- Constantly adding more checks and features.
 
 ### Running Locally
 Prerequisites: Go

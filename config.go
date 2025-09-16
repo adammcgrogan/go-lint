@@ -27,6 +27,8 @@ type Config struct {
 		CheckMagicStrings     MagicStringRule `yaml:"check-magic-strings"`
 		CheckParameterCount   ParamCountRule  `yaml:"check-parameter-count"`
 		CheckFunctionLength   FuncLengthRule  `yaml:"check-function-length"`
+		CheckDeferInLoop      bool            `yaml:"check-defer-in-loop"`
+		CheckReceiverNames    bool            `yaml:"check-receiver-names"`
 	} `yaml:"rules"`
 }
 

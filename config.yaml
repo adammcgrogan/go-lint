@@ -1,18 +1,25 @@
 rules:
+
   # Checks if exported functions have a doc comment.
-  check-exported-comments: false
+  check-exported-comments: true
 
   # Checks for long, hardcoded strings that should be constants.
   check-magic-strings:
-    enabled: false
+    enabled: true
     max-length: 35
 
   # Checks if a function accepts too many parameters.
   check-parameter-count:
-    enabled: false
+    enabled: true
     max: 4
 
   # Checks if a function's body is too long.
   check-function-length:
     enabled: true
     max-lines: 50
+
+  # Checks for 'defer' statements inside a loop.
+  check-defer-in-loop: true
+
+  # Checks for inconsistent method receiver names on a struct.
+  check-receiver-names: true

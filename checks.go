@@ -60,3 +60,66 @@ func checkFunctionLength(fset *token.FileSet, node ast.Node, maxLines int) {
 		fmt.Printf("-> [func-length] Function '%s' at %s has %d lines, which exceeds the max of %d.\n", fn.Name.Name, startPos, lineCount, maxLines)
 	}
 }
+
+func checkDeferInLoop(fset *token.FileSet, node ast.Node) {
+	forStmt, ok := node.(*ast.ForStmt)
+	if !ok {
+		return
+	}
+
+	ast.Inspect(forStmt.Body, func(n ast.Node) bool {
+		if deferStmt, ok := n.(*ast.DeferStmt); ok {
+			pos := fset.Position(deferStmt.Pos())
+			fmt.Printf("-> [defer-in-loop] Found a 'defer' statement inside a loop at %s. It will not execute until the function returns.\n", pos)
+		}
+		return true
+	})
+}
+
+type ReceiverNameChecker struct {
+	fset          *token.FileSet
+	receiverNames map[string]map[string]token.Pos
+}
+
+func NewReceiverNameChecker(fset *token.FileSet) *ReceiverNameChecker {
+	return &ReceiverNameChecker{
+		fset:          fset,
+		receiverNames: make(map[string]map[string]token.Pos),
+	}
+}
+
+func (c *ReceiverNameChecker) Visit(node ast.Node) {
+	fn, ok := node.(*ast.FuncDecl)
+	if !ok || fn.Recv == nil || len(fn.Recv.List) == 0 {
+		return
+	}
+
+	receiver := fn.Recv.List[0]
+	receiverName := receiver.Names[0].Name
+
+	var typeName string
+	if starExpr, ok := receiver.Type.(*ast.StarExpr); ok {
+		typeName = starExpr.X.(*ast.Ident).Name
+	} else if ident, ok := receiver.Type.(*ast.Ident); ok {
+		typeName = ident.Name
+	}
+
+	if typeName != "" {
+		if _, ok := c.receiverNames[typeName]; !ok {
+			c.receiverNames[typeName] = make(map[string]token.Pos)
+		}
+		c.receiverNames[typeName][receiverName] = receiver.Pos()
+	}
+}
+
+func (c *ReceiverNameChecker) Report() {
+	for structName, names := range c.receiverNames {
+
+		if len(names) > 1 {
+			fmt.Printf("-> [receiver-name] Inconsistent receiver names for struct '%s':\n", structName)
+			for name, pos := range names {
+				fmt.Printf("    - Found '%s' at %s\n", name, c.fset.Position(pos))
+			}
+		}
+	}
+}

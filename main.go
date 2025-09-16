@@ -28,6 +28,8 @@ func main() {
 
 	fmt.Printf("Running linter on %s...\n", fileName)
 
+	receiverChecker := NewReceiverNameChecker(fset)
+
 	ast.Inspect(node, func(n ast.Node) bool {
 		if cfg.Rules.CheckExportedComments {
 			checkExportedComments(fset, n)
@@ -41,9 +43,19 @@ func main() {
 		if cfg.Rules.CheckFunctionLength.Enabled {
 			checkFunctionLength(fset, n, cfg.Rules.CheckFunctionLength.MaxLines)
 		}
+		if cfg.Rules.CheckDeferInLoop {
+			checkDeferInLoop(fset, n)
+		}
+
+		if cfg.Rules.CheckReceiverNames {
+			receiverChecker.Visit(n)
+		}
 		return true
 	})
 
-	fmt.Println("Linting complete.")
+	if cfg.Rules.CheckReceiverNames {
+		receiverChecker.Report()
+	}
 
+	fmt.Println("Linting complete.")
 }

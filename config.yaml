@@ -1,4 +1,4 @@
-# '//nolint' can be appended to a line to disable all linting checks for that line.
+# '//no lint' can be appended to a line to disable all linting checks for that line.
 
 rules:
 

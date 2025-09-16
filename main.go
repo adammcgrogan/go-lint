@@ -26,25 +26,27 @@ func main() {
 		log.Fatal(err)
 	}
 
+	noLintLines := collectNoLintLines(fset, node)
+
 	fmt.Printf("Running linter on %s...\n", fileName)
 
 	receiverChecker := NewReceiverNameChecker(fset)
 
 	ast.Inspect(node, func(n ast.Node) bool {
 		if cfg.Rules.CheckExportedComments {
-			checkExportedComments(fset, n)
+			checkExportedComments(fset, n, noLintLines)
 		}
 		if cfg.Rules.CheckMagicStrings.Enabled {
-			checkMagicStrings(fset, n, cfg.Rules.CheckMagicStrings.MaxLength)
+			checkMagicStrings(fset, n, cfg.Rules.CheckMagicStrings.MaxLength, noLintLines)
 		}
 		if cfg.Rules.CheckParameterCount.Enabled {
-			checkParameterCount(fset, n, cfg.Rules.CheckParameterCount.Max)
+			checkParameterCount(fset, n, cfg.Rules.CheckParameterCount.Max, noLintLines)
 		}
 		if cfg.Rules.CheckFunctionLength.Enabled {
-			checkFunctionLength(fset, n, cfg.Rules.CheckFunctionLength.MaxLines)
+			checkFunctionLength(fset, n, cfg.Rules.CheckFunctionLength.MaxLines, noLintLines)
 		}
 		if cfg.Rules.CheckDeferInLoop {
-			checkDeferInLoop(fset, n)
+			checkDeferInLoop(fset, n, noLintLines)
 		}
 
 		if cfg.Rules.CheckReceiverNames {

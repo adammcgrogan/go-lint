@@ -4,21 +4,38 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"strings"
 )
 
-func checkExportedComments(fset *token.FileSet, node ast.Node) {
+func collectNoLintLines(fset *token.FileSet, node *ast.File) map[int]bool {
+	noLintLines := make(map[int]bool)
+	for _, commentGroup := range node.Comments {
+		for _, comment := range commentGroup.List {
+			if strings.Contains(comment.Text, "nolint") {
+				line := fset.Position(comment.Pos()).Line
+				noLintLines[line] = true
+			}
+		}
+	}
+	return noLintLines
+}
+
+func checkExportedComments(fset *token.FileSet, node ast.Node, noLintLines map[int]bool) {
 	fn, ok := node.(*ast.FuncDecl)
 	if !ok {
 		return
 	}
 
 	if fn.Name.IsExported() && fn.Doc == nil {
-		pos := fset.Position(fn.Pos())
-		fmt.Printf("-> [comment-check] Exported function '%s' at %s is missing a comment.\n", fn.Name.Name, pos)
+		line := fset.Position(fn.Pos()).Line
+		if !noLintLines[line] {
+			pos := fset.Position(fn.Pos())
+			fmt.Printf("-> [comment-check] Exported function '%s' at %s is missing a comment.\n", fn.Name.Name, pos)
+		}
 	}
 }
 
-func checkMagicStrings(fset *token.FileSet, node ast.Node, maxLength int) {
+func checkMagicStrings(fset *token.FileSet, node ast.Node, maxLength int, noLintLines map[int]bool) {
 	lit, ok := node.(*ast.BasicLit)
 	if !ok {
 		return
@@ -26,27 +43,37 @@ func checkMagicStrings(fset *token.FileSet, node ast.Node, maxLength int) {
 
 	if lit.Kind == token.STRING {
 		stringValue := lit.Value[1 : len(lit.Value)-1]
-		if len(stringValue) > maxLength { // Use the configurable max length
-			pos := fset.Position(lit.Pos())
-			fmt.Printf("-> [magic-string] Found a long hardcoded string %s at %s. Consider using a constant.\n", lit.Value, pos)
+		if len(stringValue) > maxLength {
+			line := fset.Position(lit.Pos()).Line
+			if !noLintLines[line] {
+				pos := fset.Position(lit.Pos())
+				fmt.Printf("-> [magic-string] Found a long hardcoded string %s at %s. Consider using a constant.\n", lit.Value, pos)
+			}
 		}
 	}
 }
 
-func checkParameterCount(fset *token.FileSet, node ast.Node, maxParams int) {
+func checkParameterCount(fset *token.FileSet, node ast.Node, maxParams int, noLintLines map[int]bool) {
 	fn, ok := node.(*ast.FuncDecl)
 	if !ok {
 		return
 	}
 
-	numParams := len(fn.Type.Params.List)
+	numParams := 0
+	for _, field := range fn.Type.Params.List {
+		numParams += len(field.Names)
+	}
+
 	if numParams > maxParams {
-		pos := fset.Position(fn.Pos())
-		fmt.Printf("-> [param-count] Function '%s' at %s has %d parameters, which exceeds the max of %d.\n", fn.Name.Name, pos, numParams, maxParams)
+		line := fset.Position(fn.Pos()).Line
+		if !noLintLines[line] {
+			pos := fset.Position(fn.Pos())
+			fmt.Printf("-> [param-count] Function '%s' at %s has %d parameters, which exceeds the max of %d.\n", fn.Name.Name, pos, numParams, maxParams)
+		}
 	}
 }
 
-func checkFunctionLength(fset *token.FileSet, node ast.Node, maxLines int) {
+func checkFunctionLength(fset *token.FileSet, node ast.Node, maxLines int, noLintLines map[int]bool) {
 	fn, ok := node.(*ast.FuncDecl)
 	if !ok {
 		return
@@ -57,11 +84,15 @@ func checkFunctionLength(fset *token.FileSet, node ast.Node, maxLines int) {
 
 	lineCount := endPos.Line - startPos.Line
 	if lineCount > maxLines {
-		fmt.Printf("-> [func-length] Function '%s' at %s has %d lines, which exceeds the max of %d.\n", fn.Name.Name, startPos, lineCount, maxLines)
+		declarationLine := fset.Position(fn.Pos()).Line
+
+		if !noLintLines[declarationLine] {
+			fmt.Printf("-> [func-length] Function '%s' at %s has %d lines, which exceeds the max of %d.\n", fn.Name.Name, startPos, lineCount, maxLines)
+		}
 	}
 }
 
-func checkDeferInLoop(fset *token.FileSet, node ast.Node) {
+func checkDeferInLoop(fset *token.FileSet, node ast.Node, noLintLines map[int]bool) {
 	forStmt, ok := node.(*ast.ForStmt)
 	if !ok {
 		return
@@ -69,8 +100,11 @@ func checkDeferInLoop(fset *token.FileSet, node ast.Node) {
 
 	ast.Inspect(forStmt.Body, func(n ast.Node) bool {
 		if deferStmt, ok := n.(*ast.DeferStmt); ok {
-			pos := fset.Position(deferStmt.Pos())
-			fmt.Printf("-> [defer-in-loop] Found a 'defer' statement inside a loop at %s. It will not execute until the function returns.\n", pos)
+			line := fset.Position(deferStmt.Pos()).Line
+			if !noLintLines[line] {
+				pos := fset.Position(deferStmt.Pos())
+				fmt.Printf("-> [defer-in-loop] Found a 'defer' statement inside a loop at %s. It will not execute until the function returns.\n", pos)
+			}
 		}
 		return true
 	})

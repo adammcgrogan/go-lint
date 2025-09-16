@@ -1,0 +1,5 @@
+rules:
+  check-exported-comments: true
+  check-magic-strings:
+    enabled: true
+    max-length: 35 

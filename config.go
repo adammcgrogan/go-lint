@@ -11,10 +11,22 @@ type MagicStringRule struct {
 	MaxLength int  `yaml:"max-length"`
 }
 
+type ParamCountRule struct {
+	Enabled bool `yaml:"enabled"`
+	Max     int  `yaml:"max"`
+}
+
+type FuncLengthRule struct {
+	Enabled  bool `yaml:"enabled"`
+	MaxLines int  `yaml:"max-lines"`
+}
+
 type Config struct {
 	Rules struct {
 		CheckExportedComments bool            `yaml:"check-exported-comments"`
 		CheckMagicStrings     MagicStringRule `yaml:"check-magic-strings"`
+		CheckParameterCount   ParamCountRule  `yaml:"check-parameter-count"`
+		CheckFunctionLength   FuncLengthRule  `yaml:"check-function-length"`
 	} `yaml:"rules"`
 }
 

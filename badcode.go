@@ -9,4 +9,7 @@ func GoodFunction() {
 
 func BadFunction() {
 	fmt.Println("This function needs a comment!")
+	fmt.Println("This function needs a comment!")
+	fmt.Println("This function needs a comment!")
+	fmt.Println("This function needs a comment!")
 }

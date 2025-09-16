@@ -1,5 +1,18 @@
 rules:
-  check-exported-comments: true
+  # Checks if exported functions have a doc comment.
+  check-exported-comments: false
+
+  # Checks for long, hardcoded strings that should be constants.
   check-magic-strings:
+    enabled: false
+    max-length: 35
+
+  # Checks if a function accepts too many parameters.
+  check-parameter-count:
+    enabled: false
+    max: 4
+
+  # Checks if a function's body is too long.
+  check-function-length:
     enabled: true
-    max-length: 35 
+    max-lines: 50

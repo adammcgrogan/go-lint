@@ -32,3 +32,31 @@ func checkMagicStrings(fset *token.FileSet, node ast.Node, maxLength int) {
 		}
 	}
 }
+
+func checkParameterCount(fset *token.FileSet, node ast.Node, maxParams int) {
+	fn, ok := node.(*ast.FuncDecl)
+	if !ok {
+		return
+	}
+
+	numParams := len(fn.Type.Params.List)
+	if numParams > maxParams {
+		pos := fset.Position(fn.Pos())
+		fmt.Printf("-> [param-count] Function '%s' at %s has %d parameters, which exceeds the max of %d.\n", fn.Name.Name, pos, numParams, maxParams)
+	}
+}
+
+func checkFunctionLength(fset *token.FileSet, node ast.Node, maxLines int) {
+	fn, ok := node.(*ast.FuncDecl)
+	if !ok {
+		return
+	}
+
+	startPos := fset.Position(fn.Body.Pos())
+	endPos := fset.Position(fn.Body.End())
+
+	lineCount := endPos.Line - startPos.Line
+	if lineCount > maxLines {
+		fmt.Printf("-> [func-length] Function '%s' at %s has %d lines, which exceeds the max of %d.\n", fn.Name.Name, startPos, lineCount, maxLines)
+	}
+}

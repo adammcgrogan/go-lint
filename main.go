@@ -35,6 +35,15 @@ func main() {
 		if cfg.Rules.CheckMagicStrings.Enabled {
 			checkMagicStrings(fset, n, cfg.Rules.CheckMagicStrings.MaxLength)
 		}
+		if cfg.Rules.CheckParameterCount.Enabled {
+			checkParameterCount(fset, n, cfg.Rules.CheckParameterCount.Max)
+		}
+		if cfg.Rules.CheckFunctionLength.Enabled {
+			checkFunctionLength(fset, n, cfg.Rules.CheckFunctionLength.MaxLines)
+		}
 		return true
 	})
+
+	fmt.Println("Linting complete.")
+
 }
